@@ -1,3 +1,10 @@
+# Project Summary
+
+- This project is a Spring Boot REST API for managing devices.
+- Each device includes an id, name, brand, state, and creation time.
+- The API enforces the main domain rules of the challenge, such as preventing updates or deletion when a device is `IN_USE`.
+- The application uses PostgreSQL for persistence and can be run locally with Docker Compose.
+
 # Run the application
 
 - Make sure Docker is running.
@@ -19,6 +26,17 @@ http://localhost:8080
 
 ```bash
 docker compose down
+```
+
+# Tests
+
+- Basic automated tests were added for both the service layer and the API endpoints.
+- The service tests cover key business rules such as default device state, not-found handling, invalid partial updates, and conflict cases.
+- The controller tests cover the main endpoint responses, including success, validation, not-found, bad-request, and conflict scenarios.
+- To run the tests locally:
+
+```bash
+mvn clean test
 ```
 
 # API Contracts
