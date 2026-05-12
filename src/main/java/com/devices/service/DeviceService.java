@@ -1,6 +1,7 @@
 package com.devices.service;
 
 import com.devices.entity.DeviceEntity;
+import com.devices.exception.DeviceConflictException;
 import com.devices.exception.DeviceNotFoundException;
 import com.devices.model.Device;
 import com.devices.model.DeviceState;
@@ -21,9 +22,13 @@ public class DeviceService {
 		this.repo = repo;
 	}
 
+	public Device create(String name, String brand) {
+		return create(name, brand, DeviceState.AVAILABLE);
+	}
 
 	public Device create(String name, String brand, DeviceState state) {
-		Device device = new Device(name, brand, DeviceState.AVAILABLE, Instant.now());
+		DeviceState effectiveState = state == null ? DeviceState.AVAILABLE : state;
+		Device device = new Device(name, brand, effectiveState, Instant.now());
 		return repo.save(DeviceEntity.fromDomain(device)).toDomain();
 	}
 
@@ -32,7 +37,7 @@ public class DeviceService {
 		Device existing = this.get(id);
 
 		if (existing.getState() == DeviceState.IN_USE)
-			throw new IllegalStateException("Device details cannot be updated when the device is in use.");
+			throw new DeviceConflictException("Device details cannot be updated when the device is in use.");
 		
 		Device updated = new Device(id, name, brand, state, existing.getCreationTime());
 
@@ -50,10 +55,19 @@ public class DeviceService {
 
 		if (patch.containsKey("name")) {
 			Object v = patch.get("name");
+			//We check if the name is null or empty
+			if (v == null || v.toString().isBlank()) {
+				throw new IllegalArgumentException("Name cannot be empty.");
+			}
+
 			name = v == null ? null : v.toString();
 		}
 		if (patch.containsKey("brand")) {
 			Object v = patch.get("brand");
+
+			if (v == null || v.toString().isBlank()) {
+				throw new IllegalArgumentException("Brand cannot be empty.");
+			}
 			brand = v == null ? null : v.toString();
 		}
 		if (patch.containsKey("state")) {
@@ -77,8 +91,7 @@ public class DeviceService {
 		return repo.save(DeviceEntity.fromDomain(updated)).toDomain();
 	}
 	
-	//Since the class is transactions here we use transactional read only to ensure
-	//that the data is read from the database and not from the cache
+	// Read-only transaction because this method only fetches data.
 	@Transactional(readOnly = true)
 	public Device get(Long id) {
 		return repo.findById(id)
@@ -86,8 +99,7 @@ public class DeviceService {
 				.orElseThrow(() -> new DeviceNotFoundException(id));
 	}
 
-	//Since the class is transactions here we use transactional read only to ensure
-	//that the data is read from the database and not from the cache
+	// Read-only transaction because this method only fetches data.
 	@Transactional(readOnly = true)
 	public List<Device> listAll() {
 		return repo.findAll().stream()
@@ -95,6 +107,7 @@ public class DeviceService {
 				.toList();
 	}
 
+	// Read-only transaction because this method only fetches data.
 	@Transactional(readOnly = true)
 	public List<Device> listByBrand(String brand) {
 		return repo.findByBrandIgnoreCase(brand).stream()
@@ -102,6 +115,7 @@ public class DeviceService {
 				.toList();
 	}
 
+	// Read-only transaction because this method only fetches data.
 	@Transactional(readOnly = true)
 	public List<Device> listByState(DeviceState state) {
 		return repo.findByState(state).stream()
@@ -111,11 +125,11 @@ public class DeviceService {
 
 	@Transactional(readOnly = true)
 	public List<Device> listByBrandAndState(String brand, DeviceState state) {
-		return repo.findByBrandIgnoreCaseAndState(brand, state).stream()
+		return repo.findByBrandIgnoreCase(brand).stream()
 				.map(DeviceEntity::toDomain)
+				.filter(device -> device.getState() == state)
 				.toList();
 	}
-
 	
 	public void delete(Long id) {
 		Device existing = get(id);
