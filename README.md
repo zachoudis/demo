@@ -20,3 +20,11 @@ http://localhost:8080
 ```bash
 docker compose down
 ```
+
+# API Contracts
+
+- See the API contract details in [`API_CONTRACTS.md`](./API_CONTRACTS.md).
+
+# API Calls For Testing
+
+- See the test call examples in [`API_TEST_CALLS.md`](./API_TEST_CALLS.md).
