@@ -1,5 +1,6 @@
 package com.devices.model;
 
+import com.devices.exception.DeviceConflictException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
@@ -20,20 +21,15 @@ public final class Device {
 	}
 
 	/**
-	 * Domain rule: name/brand cannot be changed when the device is in use.
-	 * Creation time is intentionally immutable (no setter / no update method).
+	 * Domain Validation: name/brand cannot be changed when the device is in use.
+	 * I return a new device object with the updated details and the same creation time
 	 */
 	public Device updateDetails(@NonNull String name, @NonNull String brand) {
-		boolean nameChanged = !this.name.equals(name);
-		boolean brandChanged = !this.brand.equals(brand);
-		if ((nameChanged || brandChanged) && this.state == DeviceState.IN_USE) {
-			throw new IllegalStateException("Name and brand cannot be updated when the device is in use.");
+		if (this.state == DeviceState.IN_USE) {
+			throw new DeviceConflictException("Device details cannot be updated when the device is in use.");
 		}
 
-		if (!nameChanged && !brandChanged) {
-			return this;
-		}
-		return new Device(this.id, name, brand, this.state, this.creationTime);
+		return new Device(this.id, name, brand, state, this.creationTime);
 	}
 
 	public Device withState(@NonNull DeviceState state) {
@@ -44,11 +40,11 @@ public final class Device {
 	}
 
 	/**
-	 * Domain rule: in-use devices cannot be deleted.
+	 * Domain validation: in-use devices cannot be deleted.
 	 */
 	public void ensureDeletable() {
 		if (this.state == DeviceState.IN_USE) {
-			throw new IllegalStateException("In-use devices cannot be deleted.");
+			throw new DeviceConflictException("In-use devices cannot be deleted.");
 		}
 	}
 }
