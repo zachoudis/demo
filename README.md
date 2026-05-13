@@ -31,7 +31,7 @@ docker compose down
 # Tests
 
 - Basic automated tests were added for both the service layer and the API endpoints.
-- The service tests cover key business rules such as default device state, not-found handling, invalid partial updates, and conflict cases.
+- The service tests cover key business rules such as default device state, not-found handling, paginated listing, partial updates (including name-only or brand-only), invalid partial payloads, and conflict cases.
 - The controller tests cover the main endpoint responses, including success, validation, not-found, bad-request, and conflict scenarios.
 - To run the tests locally:
 

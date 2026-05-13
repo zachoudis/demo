@@ -68,7 +68,7 @@
     - Response body: `Error object`
   - `404 Not Found`: device id does not exist
     - Response body: `Error object`
-  - `409 Conflict`: domain rule violation (cannot update details when device is `IN_USE`)
+  - `409 Conflict`: domain rule violation (`name`/`brand` cannot change while device is `IN_USE`; sending the **same** stored `name` and `brand` and only changing `state` is allowed)
     - Response body: `Error object`
 
 ## `PATCH /api/devices/{id}`
@@ -77,7 +77,7 @@
 - Success: `200 OK`
 - Path params:
   - `id`: device id
-- Request body can include any subset of:
+- Request body can include any subset of fields below. Omitted fields are left unchanged (you may send only `name`, only `brand`, only `state`, or any combination).
 
 ```json
 {
@@ -107,11 +107,11 @@
 
 - Response body: `Device object`
 - Error cases:
-  - `400 Bad Request`: invalid payload (e.g. blank `name` / blank `brand`, or invalid `state`)
+  - `400 Bad Request`: invalid payload (e.g. blank `name` / blank `brand`, explicit `state: null`, or invalid `state`)
     - Response body: `Error object`
   - `404 Not Found`: device id does not exist
     - Response body: `Error object`
-  - `409 Conflict`: domain rule violation (cannot update details when device is `IN_USE`)
+  - `409 Conflict`: domain rule violation (`name`/`brand` cannot change while device is `IN_USE`; a patch that only changes `state`, or keeps the same `name`/`brand`, is allowed)
     - Response body: `Error object`
 
 ## `GET /api/devices/{id}`

@@ -1,7 +1,6 @@
 package com.devices.service;
 
 import com.devices.entity.DeviceEntity;
-import com.devices.exception.DeviceConflictException;
 import com.devices.exception.DeviceNotFoundException;
 import com.devices.model.Device;
 import com.devices.model.DeviceState;
@@ -24,26 +23,22 @@ public class DeviceService {
 		this.repo = repo;
 	}
 
-	public Device create(String name, String brand) {	
+	public Device create(String name, String brand) {
 		Device device = new Device(name, brand, DeviceState.AVAILABLE, Instant.now());
-		
 		return repo.save(DeviceEntity.fromDomain(device)).toDomain();
 	}
 
-	//Here we update the details of the device only if the device is not in use
+	// Full update: apply name/brand (domain rules in updateDetails), then apply state.
 	public Device update(Long id, String name, String brand, DeviceState state) {
 		Device existing = this.get(id);
-
-		if (existing.getState() == DeviceState.IN_USE)
-			throw new DeviceConflictException("Device details cannot be updated when the device is in use.");
+		//If the device is in use, we updated only the state
+		//if the device is not in use, we update the details of the device and the state if needed
+		Device updated = existing.updateDetails(name, brand).withState(state);
 		
-		Device updated = new Device(id, name, brand, state, existing.getCreationTime());
-
 		return repo.save(DeviceEntity.fromDomain(updated)).toDomain();
 	}
 
-	//We get the existing device and then we update the details of the device 
-	// only if the device is not in use and if the state is not IN_USE
+	// Partial update: merge patch into existing fields; name/brand rules live in Device.updateDetails().
 	public Device partialUpdate(Long id, Map<String, Object> patch) {
 		Device existing = get(id);
 
@@ -53,38 +48,35 @@ public class DeviceService {
 
 		if (patch.containsKey("name")) {
 			Object v = patch.get("name");
-			//We check if the name is null or empty
 			if (v == null || v.toString().isBlank()) {
 				throw new IllegalArgumentException("Name cannot be empty.");
 			}
-
-			name = v == null ? null : v.toString();
+			name = v.toString();
 		}
 		if (patch.containsKey("brand")) {
 			Object v = patch.get("brand");
-
 			if (v == null || v.toString().isBlank()) {
 				throw new IllegalArgumentException("Brand cannot be empty.");
 			}
-			brand = v == null ? null : v.toString();
+			brand = v.toString();
 		}
 		if (patch.containsKey("state")) {
 			Object v = patch.get("state");
 			if (v == null) {
-				state = null;
-			} else {
-				state = DeviceState.valueOf(v.toString().trim().toUpperCase());
+				throw new IllegalArgumentException("State cannot be null.");
 			}
+			state = DeviceState.valueOf(v.toString().trim().toUpperCase());
 		}
 
-		//We update the details of the device only if the name and brand are not null
+		// Apply name/brand when either is present in the patch; the other field stays as on `existing`.
 		Device updated = existing;
-		if (name != null && brand != null) {
+		if (patch.containsKey("name") || patch.containsKey("brand")) {
 			updated = updated.updateDetails(name, brand);
 		}
 
-		updated = updated.withState(state);
-		
+		if (patch.containsKey("state")) {
+			updated = updated.withState(state);
+		}
 
 		return repo.save(DeviceEntity.fromDomain(updated)).toDomain();
 	}

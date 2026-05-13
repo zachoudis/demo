@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -71,12 +72,68 @@ class DeviceServiceTest {
 	}
 
 	@Test
+	void updateAllowsStateChangeWhenInUseAndDetailsUnchanged() {
+		ArgumentCaptor<DeviceEntity> captor = ArgumentCaptor.forClass(DeviceEntity.class);
+
+		Device existing = new Device(1L, "Phone", "Apple", DeviceState.IN_USE, Instant.now());
+		when(repo.findById(1L)).thenReturn(Optional.of(DeviceEntity.fromDomain(existing)));
+		when(repo.save(any(DeviceEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		Device result = service.update(1L, "Phone", "Apple", DeviceState.INACTIVE);
+
+		verify(repo).save(captor.capture());
+		Device saved = captor.getValue().toDomain();
+
+		assertEquals(DeviceState.INACTIVE, saved.getState());
+		assertEquals(DeviceState.INACTIVE, result.getState());
+		assertEquals("Phone", result.getName());
+		assertEquals("Apple", result.getBrand());
+	}
+
+	@Test
 	void partialUpdateThrowsWhenNameIsBlank() {
 		Device existing = new Device(1L, "Phone", "Apple", DeviceState.AVAILABLE, Instant.now());
 		when(repo.findById(1L)).thenReturn(Optional.of(DeviceEntity.fromDomain(existing)));
 
 		assertThrows(IllegalArgumentException.class,
 				() -> service.partialUpdate(1L, Map.of("name", "   ")));
+	}
+
+	@Test
+	void partialUpdateCanChangeNameOnly() {
+		Device existing = new Device(1L, "Phone", "Apple", DeviceState.AVAILABLE, Instant.now());
+		when(repo.findById(1L)).thenReturn(Optional.of(DeviceEntity.fromDomain(existing)));
+		when(repo.save(any(DeviceEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		Device result = service.partialUpdate(1L, Map.of("name", "iPhone 16"));
+
+		assertEquals("iPhone 16", result.getName());
+		assertEquals("Apple", result.getBrand());
+		assertEquals(DeviceState.AVAILABLE, result.getState());
+	}
+
+	@Test
+	void partialUpdateCanChangeBrandOnly() {
+		Device existing = new Device(1L, "Phone", "Apple", DeviceState.AVAILABLE, Instant.now());
+		when(repo.findById(1L)).thenReturn(Optional.of(DeviceEntity.fromDomain(existing)));
+		when(repo.save(any(DeviceEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		Device result = service.partialUpdate(1L, Map.of("brand", "Samsung"));
+
+		assertEquals("Phone", result.getName());
+		assertEquals("Samsung", result.getBrand());
+		assertEquals(DeviceState.AVAILABLE, result.getState());
+	}
+
+	@Test
+	void partialUpdateThrowsWhenStateIsNull() {
+		Device existing = new Device(1L, "Phone", "Apple", DeviceState.AVAILABLE, Instant.now());
+		when(repo.findById(1L)).thenReturn(Optional.of(DeviceEntity.fromDomain(existing)));
+
+		Map<String, Object> patch = new HashMap<>();
+		patch.put("state", null);
+
+		assertThrows(IllegalArgumentException.class, () -> service.partialUpdate(1L, patch));
 	}
 
 	@Test
