@@ -22,10 +22,14 @@ public final class Device {
 
 	/**
 	 * Domain Validation: name/brand cannot be changed when the device is in use.
-	 * I return a new device object with the updated details and the same creation time
+	 *If state is correct for update, I return a new device object with the updated details and the same creation time
 	 */
 	public Device updateDetails(@NonNull String name, @NonNull String brand) {
 		if (this.state == DeviceState.IN_USE) {
+			boolean noChange = this.name.equals(name) && this.brand.equals(brand);
+			if (noChange) {
+				return this;
+			}
 			throw new DeviceConflictException("Device details cannot be updated when the device is in use.");
 		}
 
