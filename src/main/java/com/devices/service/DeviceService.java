@@ -6,6 +6,8 @@ import com.devices.exception.DeviceNotFoundException;
 import com.devices.model.Device;
 import com.devices.model.DeviceState;
 import com.devices.repository.DeviceRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,13 +24,9 @@ public class DeviceService {
 		this.repo = repo;
 	}
 
-	public Device create(String name, String brand) {
-		return create(name, brand, DeviceState.AVAILABLE);
-	}
-
-	public Device create(String name, String brand, DeviceState state) {
-		DeviceState effectiveState = state == null ? DeviceState.AVAILABLE : state;
-		Device device = new Device(name, brand, effectiveState, Instant.now());
+	public Device create(String name, String brand) {	
+		Device device = new Device(name, brand, DeviceState.AVAILABLE, Instant.now());
+		
 		return repo.save(DeviceEntity.fromDomain(device)).toDomain();
 	}
 
@@ -101,10 +99,9 @@ public class DeviceService {
 
 	// Read-only transaction because this method only fetches data.
 	@Transactional(readOnly = true)
-	public List<Device> listAll() {
-		return repo.findAll().stream()
-				.map(DeviceEntity::toDomain)
-				.toList();
+	public Page<Device> listAll(int page, int size) {
+		return repo.findAll(PageRequest.of(page, size))
+				.map(DeviceEntity::toDomain);
 	}
 
 	// Read-only transaction because this method only fetches data.

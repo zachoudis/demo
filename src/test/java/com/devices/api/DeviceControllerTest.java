@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -71,15 +73,22 @@ class DeviceControllerTest {
 	}
 
 	@Test
-	void getAllReturnsList() throws Exception {
-		when(service.listAll()).thenReturn(List.of(
+	void getAllReturnsPaginatedResponse() throws Exception {
+		when(service.listAll(0, 2)).thenReturn(new PageImpl<>(
+				List.of(
 				sampleDevice(1L, "iPhone 15", "Apple", DeviceState.AVAILABLE),
 				sampleDevice(2L, "Galaxy S24", "Samsung", DeviceState.INACTIVE)
+				),
+				PageRequest.of(0, 2),
+				5
 		));
 
-		mockMvc.perform(get("/api/devices"))
+		mockMvc.perform(get("/api/devices?page=0&size=2"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(2));
+				.andExpect(jsonPath("$.content.length()").value(2))
+				.andExpect(jsonPath("$.totalElements").value(5))
+				.andExpect(jsonPath("$.size").value(2))
+				.andExpect(jsonPath("$.number").value(0));
 	}
 
 	@Test
@@ -102,6 +111,13 @@ class DeviceControllerTest {
 		mockMvc.perform(get("/api/devices/state/AVAILABLE"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].state").value("AVAILABLE"));
+	}
+
+	@Test
+	void getByStateReturnsBadRequestForInvalidState() throws Exception {
+		mockMvc.perform(get("/api/devices/state/NOT_A_REAL_STATE"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("Invalid state value. Allowed values are: [AVAILABLE, IN_USE, INACTIVE]"));
 	}
 
 	@Test

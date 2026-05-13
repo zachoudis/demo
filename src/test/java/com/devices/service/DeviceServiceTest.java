@@ -8,6 +8,9 @@ import com.devices.model.DeviceState;
 import com.devices.repository.DeviceRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -82,6 +85,23 @@ class DeviceServiceTest {
 		when(repo.findById(1L)).thenReturn(Optional.of(DeviceEntity.fromDomain(existing)));
 
 		assertThrows(DeviceConflictException.class, () -> service.delete(1L));
+	}
+
+	@Test
+	void listAllReturnsPaginatedDevices() {
+		DeviceEntity first = DeviceEntity.fromDomain(
+				new Device(1L, "iPhone 15", "Apple", DeviceState.AVAILABLE, Instant.now()));
+		DeviceEntity second = DeviceEntity.fromDomain(
+				new Device(2L, "Galaxy S24", "Samsung", DeviceState.INACTIVE, Instant.now()));
+
+		when(repo.findAll(PageRequest.of(0, 2)))
+				.thenReturn(new PageImpl<>(List.of(first, second), PageRequest.of(0, 2), 5));
+
+		Page<Device> result = service.listAll(0, 2);
+
+		assertEquals(2, result.getContent().size());
+		assertEquals(5, result.getTotalElements());
+		assertEquals("iPhone 15", result.getContent().get(0).getName());
 	}
 
 	@Test
