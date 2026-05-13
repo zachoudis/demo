@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,7 +36,7 @@ public class DeviceController {
 		return service.create(req.name(), req.brand());
 	}
 
-	//Put Endpoint for updating the information of a device
+	//Put Endpoint for updating all the information of a device
 	@PutMapping("/{id}")
 	public Device update(@PathVariable Long id, @Valid @RequestBody DeviceUpdateRequest req) {
 		return service.update(id, req.name(), req.brand(), req.state());
@@ -47,7 +48,7 @@ public class DeviceController {
 		return service.partialUpdate(id, patch);
 	}
 
-	//Get Endpoint for getting one record from the db
+	//Get Endpoint for getting one record given an Id from the db
 	@GetMapping("/{id}")
 	public Device getOne(@PathVariable Long id) {
 		return service.get(id);
@@ -55,8 +56,9 @@ public class DeviceController {
 
 	//Get Endpoint for getting all records from the db
 	@GetMapping
-	public List<Device> getAll() {
-		return service.listAll();
+	public PagedResponse<Device> getAll(@RequestParam(defaultValue = "0") int page,
+										@RequestParam(defaultValue = "10") int size) {
+		return PagedResponse.from(service.listAll(page, size));
 	}
 
 	//Get Endpoint for getting all records by brand from the db

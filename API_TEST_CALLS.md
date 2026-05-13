@@ -25,7 +25,13 @@ curl -X POST http://localhost:8080/api/devices \
 - Get all devices:
 
 ```bash
-curl http://localhost:8080/api/devices
+curl "http://localhost:8080/api/devices?page=0&size=10"
+```
+
+- Get the second page with a smaller page size:
+
+```bash
+curl "http://localhost:8080/api/devices?page=1&size=2"
 ```
 
 - Get one device by id:

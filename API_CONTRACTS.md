@@ -109,18 +109,27 @@
 
 - Purpose: Get all devices
 - Success: `200 OK`
+- Query params:
+  - `page`: zero-based page number, default `0`
+  - `size`: page size, default `10`
 - Response body:
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "iPhone 15",
-    "brand": "Apple",
-    "state": "AVAILABLE",
-    "creationTime": "2026-05-12T09:00:00Z"
-  }
-]
+{
+  "content": [
+    {
+      "id": 1,
+      "name": "iPhone 15",
+      "brand": "Apple",
+      "state": "AVAILABLE",
+      "creationTime": "2026-05-12T09:00:00Z"
+    }
+  ],
+  "totalElements": 1,
+  "totalPages": 1,
+  "size": 10,
+  "number": 0
+}
 ```
 
 ## `GET /api/devices/brand/{brand}`
