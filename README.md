@@ -3,6 +3,7 @@
 - This project is a Spring Boot REST API for managing devices.
 - Each device includes an id, name, brand, state, and creation time.
 - The API enforces the main domain rules of the challenge, such as preventing updates or deletion when a device is `IN_USE`.
+- The API ensures that the creation_time field will never be updated
 - The application uses PostgreSQL for persistence and can be run locally with Docker Compose.
 
 # Run the application
