@@ -175,4 +175,78 @@ class DeviceServiceTest {
 		assertEquals(2, result.size());
 		assertTrue(result.stream().allMatch(device -> device.getBrand().equals("Apple")));
 	}
+
+	@Test
+	void getReturnsDeviceWhenItExists() {
+		Device existing = new Device(1L, "Phone", "Apple", DeviceState.AVAILABLE, Instant.now());
+		when(repo.findById(1L)).thenReturn(Optional.of(DeviceEntity.fromDomain(existing)));
+
+		Device result = service.get(1L);
+
+		assertEquals(1L, result.getId());
+		assertEquals("Phone", result.getName());
+		assertEquals("Apple", result.getBrand());
+		assertEquals(DeviceState.AVAILABLE, result.getState());
+	}
+
+	@Test
+	void updateChangesDetailsAndStateWhenDeviceIsNotInUse() {
+		Device existing = new Device(1L, "Phone", "Apple", DeviceState.AVAILABLE, Instant.now());
+
+		when(repo.findById(1L)).thenReturn(Optional.of(DeviceEntity.fromDomain(existing)));
+		when(repo.save(any(DeviceEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		Device result = service.update(1L, "iPhone 16", "Apple", DeviceState.INACTIVE);
+
+		assertEquals("iPhone 16", result.getName());
+		assertEquals("Apple", result.getBrand());
+		assertEquals(DeviceState.INACTIVE, result.getState());
+	}
+
+	@Test
+	void partialUpdateCanChangeStateOnly() {
+		Device existing = new Device(1L, "Phone", "Apple", DeviceState.AVAILABLE, Instant.now());
+
+		when(repo.findById(1L)).thenReturn(Optional.of(DeviceEntity.fromDomain(existing)));
+		when(repo.save(any(DeviceEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		Device result = service.partialUpdate(1L, Map.of("state", "INACTIVE"));
+
+		assertEquals("Phone", result.getName());
+		assertEquals("Apple", result.getBrand());
+		assertEquals(DeviceState.INACTIVE, result.getState());
+	}
+
+	@Test
+	void partialUpdateThrowsWhenStateIsInvalid() {
+		Device existing = new Device(1L, "Phone", "Apple", DeviceState.AVAILABLE, Instant.now());
+
+		when(repo.findById(1L)).thenReturn(Optional.of(DeviceEntity.fromDomain(existing)));
+
+		assertThrows(IllegalArgumentException.class,
+				() -> service.partialUpdate(1L, Map.of("state", "BROKEN")));
+	}
+
+	void deleteRemovesDeviceWhenItIsNotInUse() {
+		Device existing = new Device(1L, "Phone", "Apple", DeviceState.AVAILABLE, Instant.now());
+		when(repo.findById(1L)).thenReturn(Optional.of(DeviceEntity.fromDomain(existing)));
+	
+		service.delete(1L);
+	
+		verify(repo).deleteById(1L);
+	}
+
+	@Test
+	void listByStateReturnsMappedDevices() {
+		DeviceEntity first = DeviceEntity.fromDomain(
+				new Device(1L, "Phone", "Apple", DeviceState.AVAILABLE, Instant.now())
+		);
+
+		when(repo.findByState(DeviceState.AVAILABLE)).thenReturn(List.of(first));
+
+		List<Device> result = service.listByState(DeviceState.AVAILABLE);
+
+		assertEquals(1, result.size());
+		assertEquals(DeviceState.AVAILABLE, result.get(0).getState());
+	}
 }
