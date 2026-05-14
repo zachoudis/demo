@@ -47,3 +47,13 @@ mvn clean test
 # API Calls For Testing
 
 - See the test call examples in [`API_TEST_CALLS.md`](./API_TEST_CALLS.md).
+
+# Future work
+
+Some future work I would add to the project if it was going on production would be the following:
+
+- **Logging**: structured logs, sensible log levels, and any other important info that will help trace a call through the stack.
+- **Metrics and health**: **Micrometer** metrics (latency, error rates) and dashboards (**Grafana** or your cloud vendor), plus explicit **readiness/liveness** probes if this runs on Kubernetes.
+- **API discoverability**: **OpenAPI** (Swagger UI) generated from the code or maintained alongside `API_CONTRACTS.md`, if consumers need a machine-readable contract.
+- **Integration tests**: **Testcontainers** (or similar) for tests against a real PostgreSQL instance, complementing the current unit/MockMvc tests.
+- **Security**: I would secure this API with **authentication and authorization** using a **client-credentials** style flow: each client would authenticate with a **client id and secret**, obtain an access token, and send **`Authorization: Bearer <token>`** on **every** request so the server can verify identity and enforce access rules.
